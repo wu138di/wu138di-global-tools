@@ -1,0 +1,15 @@
+node_modules/
+src/*_result.json
+src/build.json
+__pycache__/
+*.pyc
+.env
+.env.*
+secret/
+secrets/
+device-data/
+subscription.url
+*.secret
+global-ui-pin*.json
+kano_*_store.xml
+*.log
