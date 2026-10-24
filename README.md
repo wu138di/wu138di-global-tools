@@ -2,7 +2,13 @@
 
 面向 **UFI-TOOLS** 的 Mihomo 代理配置插件。支持订阅、节点 YAML、规则查看、连接管理、测速与网络检测哦~₍ᐢ.ˬ.ᐢ₎♡~。
 
-![界面](docs/interface.png)
+首页图
+
+<img width="1199" height="676" alt="3-2" src="https://github.com/user-attachments/assets/e110b84a-ffda-458b-94e7-9f922f1860dc" />
+
+
+
+
 
 ## 功能
 
