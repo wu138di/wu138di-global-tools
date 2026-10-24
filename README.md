@@ -1,20 +1,8 @@
 # wu138di 全球上网 V1.0
 
-面向 **UFI-TOOLS 完整版**的 Mihomo 网关管理插件。支持订阅、节点 YAML、规则查看、连接管理、测速与网络检测。
+面向 **UFI-TOOLS** 的 Mihomo 代理配置插件。支持订阅、节点 YAML、规则查看、连接管理、测速与网络检测哦~₍ᐢ.ˬ.ᐢ₎♡~。
 
 ![界面](docs/interface.png)
-
-## 下载与安装
-
-- [TXT 插件](dist/wu138di-全球上网-V1.0.txt)
-- [JS 插件](dist/wu138di-全球上网-V1.0.js)
-- [离线界面预览](dist/界面预览.html)：下载后在本地打开，不连接设备、不生成示例节点。
-
-TXT / JS 二选一，在 UFI-TOOLS 的插件功能中导入。升级前移除旧的同类界面插件，保留设备上的 Mihomo 服务、配置与订阅。
-
-初始入口口令为 **2007**。登录后可在「设置 → 登录口令」修改；修改后使用新口令，登录页不再展示默认提示。口令以随机盐 PBKDF2-SHA256 摘要保存在设备 root 保护目录，不保存明文或浏览器本地存储。
-
-本仓库没有内置个人订阅、节点凭据、设备 API 密钥或自定义口令。界面口令不替代 UFI 登录、Root 权限与 Mihomo 控制器认证。
 
 ## 功能
 
@@ -32,11 +20,11 @@ TXT / JS 二选一，在 UFI-TOOLS 的插件功能中导入。升级前移除旧
 
 ## 适用范围
 
-当前仅在 **U30 Pro / MU5358 / B24** 环境实测。安装器依赖 Android ARM64、Root、Magisk BusyBox、系统 curl、`br0`、`sipa_eth0`、`192.168.0.1/24` 及相应透明代理内核能力。
-
-不宣称 F50、CPE 或所有支持 UFI-TOOLS 的设备通用。其他型号需适配机型检查、网卡、网段和网络恢复逻辑。
+当前仅在 **ZTE U30 Pro / F50** 环境实测。安装器依赖 Android ARM64、Root、Magisk BusyBox、系统 curl、`br0`、`sipa_eth0`、`192.168.0.1/24` 及相应透明代理内核能力。
 
 节点测速、订阅可用性与平台播放权限是不同事项；延迟数值随节点和网络变化，不承诺所有节点低于某个固定数值。
+
+其余支持UFI-TOOLS的有待测试，欢迎来联系我测试！
 
 ## 源码构建与测试
 
@@ -49,14 +37,15 @@ python scripts/build.py
 ```
 
 `dist/` 为可直接导入的独立文件；运行时不依赖 npm、Python、外部 JS CDN。测试使用合成数据，不访问用户设备。
+## 声明
 
-## 参考与第三方内容
+本仓库不是 UFI-TOOLS、Mihomo 或 Clash 的官方发行版。界面布局参考 Clash Verge，未包含其桌面程序。代码许可不自动涵盖图片素材的第三方权利。
 
-- [UFI-TOOLS](https://github.com/kanoqwq/UFI-TOOLS)
-- [Mihomo](https://github.com/MetaCubeX/mihomo) / [API 文档](https://wiki.metacubex.one/api/)
-- [U30 Pro 部署方案记录](https://github.com/ez842/zhongxing-u30-pro-mihomo-proxy)
-- CryptoJS 4.2.0：MIT，许可见 [src/vendor/LICENSE](src/vendor/LICENSE)。用于 HTTP 局域网页面的密码派生兼容。
+## 支持我
 
-本仓库不是 UFI-TOOLS、Mihomo 或 Clash Verge 官方发行版。界面布局参考 Clash Verge，未包含其桌面程序。图片素材由使用者提供；代码许可不自动涵盖图片素材的第三方权利。
+制作实属不易，如果你想为爱发电，可以扫下面的码支持我~谢谢啦
+
+<img width="1382" height="1382" alt="mm_reward_qrcode_1792512034770" src="https://github.com/user-attachments/assets/b684be82-806f-4a94-9248-ec0028d21167" />
+
 
 **Made by wu138di**
