@@ -15,7 +15,8 @@ PLUGIN_LOCK=/data/adb/u30proxy-plugin-install.lock
 PLUGIN_LOCK_HELD=0
 fail() { printf 'U30_PLUGIN_ERROR: %s\n' "$1" >&2; exit 1; }
 [ "$(id -u)" = 0 ] || fail ROOT_REQUIRED
-[ -x "$BB" ] && [ -x "$CURL" ] || fail MAGISK_BUSYBOX_AND_SYSTEM_CURL_REQUIRED
+[ -x "$BB" ] || fail MAGISK_BUSYBOX_NOT_FOUND
+[ -x "$CURL" ] || fail SYSTEM_CURL_NOT_FOUND
 cleanup() {
     rc=$?
     if [ "$PROBE_OWNED" = 1 ]; then probe_cleanup; fi
@@ -1619,7 +1620,8 @@ fi
 /system/bin/sh -n "$B/admin/cgi-bin/manage.cgi"
 cp "$S/u30proxy.sh" /data/adb/service.d/u30proxy.sh
 chmod 700 /data/adb/service.d/u30proxy.sh
-touch "$B/run/autostart"
+# New installations leave autostart disabled.
+rm -f "$B/run/autostart"
 "$B/control.sh" start
 "$B/control.sh" status
 echo 'SERVICES_STARTED_WITHOUT_UNCONFIGURED_TRANSPARENT_CAPTURE'
@@ -1646,7 +1648,19 @@ probe_cleanup
 PROBE_OWNED=0
 fetch() {
     target=$1; expected=$2; url=$3
-    "$CURL" --disable --fail --show-error --location --retry 2 --connect-timeout 15 --max-time 300 --proto '=https' --proto-redir '=https' --output "$target.part" "$url" || fail OFFICIAL_HTTPS_DOWNLOAD_FAILED
+    case "${target##*/}" in
+        mihomo.gz) asset=CORE;; ui.tgz) asset=DASHBOARD;;
+        geoip-cn.mrs) asset=GEOIP_CN;; geoip-private.mrs) asset=GEOIP_PRIVATE;;
+        geosite-cn.mrs) asset=GEOSITE_CN;; geosite-private.mrs) asset=GEOSITE_PRIVATE;;
+        *) asset=RESOURCE;;
+    esac
+    if http=$("$CURL" --disable --fail --show-error --location --retry 2 --connect-timeout 15 --max-time 300 --proto '=https' --proto-redir '=https' --write-out '%{http_code}' --output "$target.part" "$url"); then
+        :
+    else
+        curl_rc=$?
+        case "$http" in [0-9][0-9][0-9]) :;; *) http=000;; esac
+        fail "OFFICIAL_DOWNLOAD_${asset}_CURL_${curl_rc}_HTTP_${http}"
+    fi
     "$BB" chmod 600 "$target.part"
     hash_ok "$target.part" "$expected" || fail OFFICIAL_ASSET_HASH_MISMATCH
     "$BB" mv "$target.part" "$target"
@@ -1654,31 +1668,31 @@ fetch() {
 if hash_ok /data/local/tmp/u30-stage/mihomo "$CORE_SHA"; then
     "$BB" cp /data/local/tmp/u30-stage/mihomo "$S/mihomo"
 else
-    fetch "$S/mihomo.gz" 42b1f2be8702484d3ae6238daab392622f54bd0d264966700f1f28f52596e326 https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-android-arm64-v8-v1.19.32.gz
+    fetch "$S/mihomo.gz" 42b1f2be8702484d3ae6238daab392622f54bd0d264966700f1f28f52596e326 https://8.134.248.110/global-tools/releases/v1/mihomo.gz
     "$BB" gzip -dc "$S/mihomo.gz" > "$S/mihomo"
 fi
 hash_ok "$S/mihomo" "$CORE_SHA" || fail CORE_DECOMPRESSED_HASH_MISMATCH
 "$BB" chmod 700 "$S/mihomo"
-fetch "$S/ui.tgz" 7bea3c8878cb15a4bd9ee58275045f41642e17667dbe1ae3ce27bf5e3e7dc99b https://github.com/MetaCubeX/metacubexd/releases/download/v1.270.6/compressed-dist.tgz
+fetch "$S/ui.tgz" 7bea3c8878cb15a4bd9ee58275045f41642e17667dbe1ae3ce27bf5e3e7dc99b https://8.134.248.110/global-tools/releases/v1/ui.tgz
 if hash_ok /data/local/tmp/u30-stage/geoip-cn.mrs d8573e8435f16116a4ba7ef7bfe914d9615e43a812eb2a348694ef21b20e0ed3; then
     "$BB" cp /data/local/tmp/u30-stage/geoip-cn.mrs "$S/geoip-cn.mrs"
 else
-    fetch "$S/geoip-cn.mrs" d8573e8435f16116a4ba7ef7bfe914d9615e43a812eb2a348694ef21b20e0ed3 https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/989c8194a8c01e8d85ab2c33aa7d8af3849d3393/geo/geoip/cn.mrs
+    fetch "$S/geoip-cn.mrs" d8573e8435f16116a4ba7ef7bfe914d9615e43a812eb2a348694ef21b20e0ed3 https://8.134.248.110/global-tools/releases/v1/geoip-cn.mrs
 fi
 if hash_ok /data/local/tmp/u30-stage/geoip-private.mrs 076ea1da10b442f01c6fb3b86a66411727a15df69d70e8d600a8a458b07a8bb0; then
     "$BB" cp /data/local/tmp/u30-stage/geoip-private.mrs "$S/geoip-private.mrs"
 else
-    fetch "$S/geoip-private.mrs" 076ea1da10b442f01c6fb3b86a66411727a15df69d70e8d600a8a458b07a8bb0 https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/989c8194a8c01e8d85ab2c33aa7d8af3849d3393/geo/geoip/private.mrs
+    fetch "$S/geoip-private.mrs" 076ea1da10b442f01c6fb3b86a66411727a15df69d70e8d600a8a458b07a8bb0 https://8.134.248.110/global-tools/releases/v1/geoip-private.mrs
 fi
 if hash_ok /data/local/tmp/u30-stage/geosite-cn.mrs 2f7ccaf6ac344b22f2d3751ffcdd1e102f6cd698fb526c4c3eb4c0797505d75f; then
     "$BB" cp /data/local/tmp/u30-stage/geosite-cn.mrs "$S/geosite-cn.mrs"
 else
-    fetch "$S/geosite-cn.mrs" 2f7ccaf6ac344b22f2d3751ffcdd1e102f6cd698fb526c4c3eb4c0797505d75f https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/989c8194a8c01e8d85ab2c33aa7d8af3849d3393/geo/geosite/cn.mrs
+    fetch "$S/geosite-cn.mrs" 2f7ccaf6ac344b22f2d3751ffcdd1e102f6cd698fb526c4c3eb4c0797505d75f https://8.134.248.110/global-tools/releases/v1/geosite-cn.mrs
 fi
 if hash_ok /data/local/tmp/u30-stage/geosite-private.mrs 0f9ba48d4d0b0d192a4e7c3548486dde05e5a92e6e58e8ea8c9cc302712a1420; then
     "$BB" cp /data/local/tmp/u30-stage/geosite-private.mrs "$S/geosite-private.mrs"
 else
-    fetch "$S/geosite-private.mrs" 0f9ba48d4d0b0d192a4e7c3548486dde05e5a92e6e58e8ea8c9cc302712a1420 https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/989c8194a8c01e8d85ab2c33aa7d8af3849d3393/geo/geosite/private.mrs
+    fetch "$S/geosite-private.mrs" 0f9ba48d4d0b0d192a4e7c3548486dde05e5a92e6e58e8ea8c9cc302712a1420 https://8.134.248.110/global-tools/releases/v1/geosite-private.mrs
 fi
 
 "$BB" chmod 600 "$S"/*
@@ -1687,7 +1701,7 @@ fi
 FRESH=1
 /system/bin/sh "$S/install-services.sh" > "$S/install-services.log" 2>&1 || fail FRESH_SERVICES_FAILED_ORIGINALS_PRESERVED
 /system/bin/sh "$BASE/control.sh" status > "$S/status.txt"
-for state in core=running controller=authenticated-ready admin=running watchdog=running autostart=yes subscription=none transparent=off; do
+for state in core=running controller=authenticated-ready admin=running watchdog=running autostart=no subscription=none transparent=off; do
     "$BB" grep -F -x "$state" "$S/status.txt" >/dev/null || fail FRESH_SERVICE_STATE_INVALID
 done
 cat > "$BACKUP/rollback.sh" <<'U30_FRESH_ROLLBACK_EOF'

@@ -1,5 +1,24 @@
 # wu138di 全球上网 V1.0
 
+## v1.0.1 update
+
+- 修复 U30 Pro B24 拉取安装资源失败：核心、面板与规则改用阿里云 HTTPS 下载，保留 SHA256 校验。
+- 修复 F50 **未预装 BusyBox** 时的环境安装与工具路径适配；仍需要 Root，**不是免 Root 版**。
+- 修复出口网卡写死、节点域名引导解析、全局模式的节点检查与换行兼容；不再显示按等待次数推算的百分比。
+
+| 机型 | TXT | JS | 本次验证状态 |
+| --- | --- | --- | --- |
+| U30 Pro / MU5358 B24 | [下载](dist/wu138di-global-tools-u30-v1.0.1.txt) | [下载](dist/wu138di-global-tools-u30-v1.0.1.js) | 已完成实机节点、HTTPS、电脑透明代理与关闭恢复测试 |
+| F50 / MU300 B08 | [下载](dist/wu138di-global-tools-f50-v1.0.1.txt) | [下载](dist/wu138di-global-tools-f50-v1.0.1.js) | 候选适配包；本地回归通过，尚未完成同等实机测试 |
+
+[GitHub 发布包](https://github.com/wu138di/wu138di-global-tools/releases/tag/v1.0.1) · [阿里云下载](https://8.134.248.110/global-tools/plugins/v1.0.1/wu138di-global-tools-v1.0.1.zip)（U30/F50 分包）
+
+JS/TXT 二选一，只导入对应机型的界面插件。不要把 F50 包装到 U30；安装不是刷机，不清空订阅。初始口令 **2007**，可在设置更改。透明代理与开机自启需手动开启。
+
+源码构建全部变体：`python scripts/build-all.py`。U30 测试：`npm ci && npm test`；F50 测试：在 `variants/f50` 目录执行相同命令。机型专用源码分别为 `src/` 和 `variants/f50/src/`。
+
+
+
 面向 **UFI-TOOLS** 的 Mihomo 代理配置插件。支持订阅、节点 YAML、规则查看、连接管理、测速与网络检测哦~₍ᐢ.ˬ.ᐢ₎♡~。
 
 <img width="1199" height="676" alt="3-2" src="https://github.com/user-attachments/assets/e110b84a-ffda-458b-94e7-9f922f1860dc" />
@@ -20,7 +39,7 @@
 
 ## 适用范围
 
-当前仅在 **ZTE U30 Pro / F50** 环境实测。安装器依赖 Android ARM64、Root、Magisk BusyBox、系统 curl、`br0`、`sipa_eth0`、`192.168.0.1/24` 及相应透明代理内核能力。
+当前 U30 Pro / MU5358 B24 已完成本次实机验证；F50 B08 仍按候选包发布，未完成本次实机验收。安装器依赖 Android ARM64、Root、Magisk BusyBox、系统 curl、`br0`、`sipa_eth0`、`192.168.0.1/24` 及相应透明代理内核能力。
 
 节点测速、订阅可用性与平台播放权限是不同事项；延迟数值随节点和网络变化，不承诺所有节点低于某个固定数值。
 

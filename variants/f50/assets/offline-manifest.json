@@ -1,0 +1,31 @@
+{
+  "archive_sha256": "67147d3d552d52f80e08a726964db0c7c3a06e2a27908288b9dbcc3366acc4d2",
+  "archive_bytes": 24975360,
+  "files": {
+    "mihomo.gz": {
+      "bytes": 21866463,
+      "sha256": "42b1f2be8702484d3ae6238daab392622f54bd0d264966700f1f28f52596e326"
+    },
+    "ui.tgz": {
+      "bytes": 2518154,
+      "sha256": "7bea3c8878cb15a4bd9ee58275045f41642e17667dbe1ae3ce27bf5e3e7dc99b"
+    },
+    "geoip-cn.mrs": {
+      "bytes": 37675,
+      "sha256": "d8573e8435f16116a4ba7ef7bfe914d9615e43a812eb2a348694ef21b20e0ed3"
+    },
+    "geoip-private.mrs": {
+      "bytes": 155,
+      "sha256": "076ea1da10b442f01c6fb3b86a66411727a15df69d70e8d600a8a458b07a8bb0"
+    },
+    "geosite-cn.mrs": {
+      "bytes": 539333,
+      "sha256": "2f7ccaf6ac344b22f2d3751ffcdd1e102f6cd698fb526c4c3eb4c0797505d75f"
+    },
+    "geosite-private.mrs": {
+      "bytes": 742,
+      "sha256": "0f9ba48d4d0b0d192a4e7c3548486dde05e5a92e6e58e8ea8c9cc302712a1420"
+    }
+  },
+  "uncompressed_core_sha256": "bb9afbd48717f92d59e07da35fb694b83d40d6edb63eb9033c2ee4174137d195"
+}

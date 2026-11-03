@@ -23,7 +23,7 @@ function createPlatformCore(options) {
   }
   function session(check) { allowed(); if (check !== epoch) throw fail('会话已锁定'); }
   function progress(value) {
-    const n = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    const n = typeof value==='string'?{stage:value}:Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
     listeners.forEach(callback => { try { callback(n); } catch (_) {} });
   }
   function textArg(value, limit = 1024) {
@@ -46,7 +46,7 @@ function createPlatformCore(options) {
     catch (_) { throw fail('设备连接中断'); }
     session(check);
     if (!result || result.success !== true) throw fail('请登录 UFI-TOOLS 并开启高级功能');
-    const output = String(result.content == null ? '' : result.content);
+    const output = String(result.content == null ? '' : result.content).replace(/\r\n?/g,'\n');
     if (output.length > API_LIMIT + 1024) throw fail('设备响应过大');
     const marker = output.match(/(?:^|\n)__U30_RC__=(\d+)\s*$/);
     if (!marker) throw fail('设备响应未确认');
@@ -126,11 +126,19 @@ function createPlatformCore(options) {
     if (typeof script !== 'string' || !script) throw fail('设备脚本缺失');
     const name = id();
     const path = JOBROOT + '/' + name;
-    const runner = '#!/system/bin/sh\numask 077\nD=' + quote(path) + '\n/system/bin/sh "$D/task.sh" >"$D/private.log" 2>&1\nr=$?\nrm -f "$D/task.sh" "$D/runner.sh"\nprintf "%s\\n" "$r" > "$D/result.tmp"\nmv "$D/result.tmp" "$D/result"\nexit "$r"\n';
-    const launch = 'set -e\numask 077\ntest ! -L ' + quote(JOBROOT) + '\nmkdir -p ' + quote(JOBROOT) + '\nchmod 700 ' + quote(JOBROOT) +
-      '\ntest ! -e ' + quote(path) + '\nmkdir ' + quote(path) + '\nchmod 700 ' + quote(path) + '\nprintf %s ' + quote(script) + ' > ' + quote(path + '/task.sh') +
-      '\nprintf %s ' + quote(runner) + ' > ' + quote(path + '/runner.sh') + '\nchmod 700 ' + quote(path + '/task.sh') + ' ' + quote(path + '/runner.sh') +
-      '\n/system/bin/sh -n ' + quote(path + '/task.sh') + '\nnohup /system/bin/sh ' + quote(path + '/runner.sh') + ' >/dev/null 2>&1 </dev/null &\nprintf "started\\n"';
+    // Use the same bounded transfer that already succeeded for BusyBox, not an 80KB shell argument.
+    const codec=createPinCrypto();
+    const resolver='BB=/system/bin/toybox; for candidate in /data/adb/u30proxy-tools/busybox /data/adb/magisk/busybox /data/adb/ksu/bin/busybox /data/adb/ap/bin/busybox /data/data/com.minikano.f50_sms/files/busybox; do if [ -x "$candidate" ]; then BB=$candidate; break; fi; done; test -n "$BB" || exit 69\n';
+    const runner='#!/system/bin/sh\numask 077\n'+resolver+'D='+quote(path)+'\n"$BB" printf started > "$D/runner.started"\n/system/bin/sh "$D/task.sh" > "$D/private.log" 2>&1\nrc=$?\n"$BB" printf "%s\\n" "$rc" > "$D/result.tmp"\n"$BB" mv "$D/result.tmp" "$D/result"\nexit "$rc"\n';
+    await root('set -e\numask 077\ntest ! -L '+quote(JOBROOT)+'\nmkdir -p '+quote(JOBROOT)+'\nchmod 700 '+quote(JOBROOT)+'\ntest ! -e '+quote(path)+'\nmkdir '+quote(path)+'\nchmod 700 '+quote(path),check);
+    for(const [filename,content] of [['task.sh',script],['runner.sh',runner]]){
+      const encoded=codec.enc.Base64.stringify(codec.enc.Utf8.parse(content)),hash=codec.SHA256(content).toString();
+      const destination=path+'/'+filename,part=destination+'.b64';
+      await root('set -e\numask 077\nprintf %s "" > '+quote(part),check);
+      for(let at=0;at<encoded.length;at+=16384)await root('set -e\nprintf %s '+quote(encoded.slice(at,at+16384))+' >> '+quote(part),check);
+      await root('set -e\n'+resolver+'"$BB" base64 -d '+quote(part)+' > '+quote(destination)+'\nh=$("$BB" sha256sum '+quote(destination)+'); test "${h%% *}" = '+quote(hash)+'\n/system/bin/sh -n '+quote(destination)+'\nchmod 700 '+quote(destination)+'\nrm -f '+quote(part),check);
+    }
+    const launch='set -e\n'+resolver+'"$BB" nohup /system/bin/sh '+quote(path+'/runner.sh')+' > '+quote(path+'/launcher.log')+' 2>&1 </dev/null &\nprintf "started\\n"';
     await root(launch, check);
     activeJob = name;
     const deadline = Date.now() + 15 * 60 * 1000;
@@ -138,14 +146,29 @@ function createPlatformCore(options) {
     try {
       while (Date.now() < deadline) {
         session(check);
-        const output = await root('if [ -f ' + quote(path + '/result') + ' ]; then r=$(cat ' + quote(path + '/result') + '); case "$r" in ""|*[!0-9]*) exit 65;; esac; printf "__U30_JOB_RC__=%s\\n" "$r"; rm -rf ' + quote(path) + '; else printf "pending\\n"; fi', check);
-        const done = output.match(/^__U30_JOB_RC__=(\d+)$/);
-        if (done) { if (Number(done[1]) !== 0) throw fail('后台任务失败（' + done[1] + '）'); return { ok: true }; }
-        progress(Math.min(90, 8 + ++count * 2));
+        const poll='if [ -f '+quote(path+'/result')+' ]; then r=$(cat '+quote(path+'/result')+'); case "$r" in ""|*[!0-9]*) exit 65;; esac; printf "__U30_JOB_RC__=%s\n" "$r"; if [ "$r" = 0 ]; then rm -rf '+quote(path)+'; else reason=$(grep -E "^U30_PLUGIN_ERROR: [A-Za-z0-9_]+$" '+quote(path+'/private.log')+' | tail -n 1 | cut -d " " -f 2); printf "__U30_JOB_REASON__=%s\n" "$reason"; fi; else if [ -f '+quote(path+'/runner.started')+' ]; then printf running; else printf waiting; fi; fi';
+        const output = await root(poll, check);
+        const done = output.match(/(?:^|\n)__U30_JOB_RC__=(\d+)(?:\n|$)/);
+        if (done) {
+          if (Number(done[1]) !== 0) {
+            const reason=output.match(/(?:^|\n)__U30_JOB_REASON__=([A-Za-z0-9_]{1,96})(?:\n|$)/);
+            const error=fail('后台任务失败（'+done[1]+'）');error.safeCode=reason?reason[1]:'JOB_EXIT_'+done[1];throw error;
+          }
+          return { ok: true };
+        }
+        if(output==='waiting' && count>=10){const error=fail('安装任务未启动');error.safeCode='RUNNER_NOT_STARTED';throw error;}
+        ++count;progress('安装组件');
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
       throw fail('任务仍在后台，请稍后刷新');
     } finally { activeJob = null; }
+  }
+  async function phase(name,operation){
+    try{return await operation();}catch(error){
+      const exit=String(error&&error.message||'').match(/（(\d{1,3})）/);
+      const reason=error&&/^[A-Za-z0-9_]{1,96}$/.test(error.safeCode||'')?error.safeCode:(exit?'EXIT_'+exit[1]:'FAILED');
+      const wrapped=fail(name+'失败');wrapped.safeCode=name+'_'+reason;throw wrapped;
+    }
   }
   async function installChannel(check) {
     const initial=await status();
@@ -218,7 +241,7 @@ function createPlatformCore(options) {
               const messages={download_http_403:'服务器拒绝订阅（HTTP 403）',download_http_401:'订阅认证失败（HTTP 401）',download_failed:'订阅下载失败',test_failed:'节点配置校验失败',format_rejected:'节点配置校验失败'};
               const error=fail(messages[reason]||'导入失败');error.code=reason;throw error;
             } return assignAfterImport(check, '导入'); }
-          progress(Math.min(90, 12 + ++count * 2));
+          ++count;progress('下载并校验订阅');
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
         throw fail('订阅仍在后台更新，请稍后刷新');
@@ -260,7 +283,8 @@ function createPlatformCore(options) {
           const before=await status();
           if(before.subscription!=='validated') throw fail('请先导入节点');
           if(before.core!=='running') await job(bridgeCommand('management_start'),check);
-          const nodes=await proxies();let node='PROXY';const visited=new Set();
+          await phase('NETWORK',()=>job(scripts&&scripts.networkRepair,check));
+          const nodes=await proxies(),routing=await api('mode');let node=routing.mode==='global'?'GLOBAL':'PROXY';const visited=new Set();
           while(nodes[node] && Array.isArray(nodes[node].all)) {
             if(visited.has(node)||visited.size>12) throw fail('代理组循环');
             visited.add(node);node=nodes[node].now;
@@ -278,7 +302,8 @@ function createPlatformCore(options) {
     },
     autostart(value) { if (typeof value !== 'boolean') return Promise.reject(fail('设置无效')); return mutation(check => bridge('autostart', [value ? 'yes' : 'no'], check).then(() => ({ ok: true }))); },
     install() { return mutation(async check=>{
-      const before=await status();await job(scripts&&scripts.install,check);
+      const before=await status();await phase('INSTALL',()=>job(scripts&&scripts.install,check));
+      if(before.transparent!=='on')await phase('NETWORK',()=>job(scripts&&scripts.networkRepair,check));
       if(before.deployment==='missing'||before.core==='stopped'){await job(bridgeCommand('stop'),check);await job(bridgeCommand('disable'),check);}
       if(before.autostart!=='yes')await bridge('autostart',['no'],check);
       return {ok:true};

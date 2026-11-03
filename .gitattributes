@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.png -text
+*.webp -text
+**/busybox-arm64 -text
+dist/** -text

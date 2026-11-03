@@ -1,10 +1,10 @@
 {
   "name": "wu138di-global-network",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "UFI-TOOLS Mihomo gateway management plugin",
   "scripts": {
-    "test": "node src/test_core_v1.mjs && node src/test_pin_flags.mjs && node src/test_ui_v1.mjs",
+    "test": "node src/test_core_v1.mjs && node src/test_pin_flags.mjs && node src/test_ui_v1.mjs && node src/test_u30_job_transport.mjs",
     "build": "python scripts/build.py"
   },
   "devDependencies": {

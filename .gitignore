@@ -13,3 +13,8 @@ subscription.url
 global-ui-pin*.json
 kano_*_store.xml
 *.log
+
+**/node_modules/
+**/*_result.json
+variants/f50/dist/
+**/test-run.txt
