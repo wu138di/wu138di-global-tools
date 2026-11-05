@@ -1,0 +1,5 @@
+/web/
+/payload/
+/dist/
+/test-results/
+*.exe

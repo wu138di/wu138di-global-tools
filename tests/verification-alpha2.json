@@ -1,0 +1,26 @@
+{
+  "version": "1.1.0-alpha.2",
+  "manager_sha256": "7b9c238100cd45e254e6afcd05b956df15a681f4c5e11438943d9b9b7368fbc4",
+  "http_tool_sha256": "cf36f27086f8e8fbb14355b9fb2313a78d6bbc51501989348d637987a7a3e0b7",
+  "go_tests": 21,
+  "installer_checks": 16,
+  "frontend_cases": 5,
+  "go_vet": "PASS",
+  "real_device": "MU5358 U30ProV1.0.0B24",
+  "adb_detection": "explicit path and automatic SDK detection passed",
+  "windows_powershell_5_1": "PASS",
+  "adb_manager_install": "PASS",
+  "native_http_direct_proxy_controller": [
+    200,
+    204,
+    200
+  ],
+  "isolated_public_script_adoption_and_rollback": "PASS",
+  "production_proxy_state": "preserved enabled/on; autostart no",
+  "existing_magisk": "28103 preserved; not upgraded",
+  "manager_https": "certificate verified, 200",
+  "fresh_core_install": "NOT_TESTED",
+  "production_script_adoption": "NOT_EXECUTED_WHILE_USER_PROXY_ENABLED",
+  "f50_hardware": "NOT_TESTED",
+  "initial_root_flash": "NOT_IMPLEMENTED_OR_PERFORMED"
+}

@@ -1,8 +1,0 @@
-{
-  "source": "https://github.com/topjohnwu/Magisk/releases/download/v30.7/Magisk-v30.7.apk",
-  "release": "https://github.com/topjohnwu/Magisk/releases/tag/v30.7",
-  "apk_sha256": "e0d32d2123532860f97123d927b1bb86c4e08e6fd8a48bfc6b5bee0afae9ebd5",
-  "binary_entry": "lib/arm64-v8a/libbusybox.so",
-  "binary_sha256": "4d60ab3f5a59ebb2ca863f2f514e6924401b581e9b64f602665c008177626651",
-  "binary_bytes": 1710600
-}

@@ -1,70 +1,66 @@
-# wu138di 全球上网 V1.0
+# wu138di 全球上网
 
-## v1.0.1 update
+**自研管理引擎 · ADB 独立部署 · 浏览器管理**
 
-- 修复 U30 Pro B24 拉取安装资源失败：核心、面板与规则改用阿里云 HTTPS 下载，保留 SHA256 校验。
-- 修复 F50 **未预装 BusyBox** 时的环境安装与工具路径适配；仍需要 Root，**不是免 Root 版**。
-- 修复出口网卡写死、节点域名引导解析、全局模式的节点检查与换行兼容；不再显示按等待次数推算的百分比。
+无需配套平台或专用 App。管理服务、原生 HTTP 工具、界面与安装自动化由本项目提供；**代理内核为 Mihomo**，第三方组件保留原署名与许可证。
 
-| 机型 | TXT | JS | 本次验证状态 |
-| --- | --- | --- | --- |
-| U30 Pro / MU5358 B24 | [下载](dist/wu138di-global-tools-u30-v1.0.1.txt) | [下载](dist/wu138di-global-tools-u30-v1.0.1.js) | 已完成实机节点、HTTPS、电脑透明代理与关闭恢复测试 |
-| F50 / MU300 B08 | [下载](dist/wu138di-global-tools-f50-v1.0.1.txt) | [下载](dist/wu138di-global-tools-f50-v1.0.1.js) | 候选适配包；本地回归通过，尚未完成同等实机测试 |
+## 下载与安装
 
-[GitHub 发布包](https://github.com/wu138di/wu138di-global-tools/releases/tag/v1.0.1) · [阿里云下载](https://8.134.248.110/global-tools/plugins/v1.0.1/wu138di-global-tools-v1.0.1.zip)（U30/F50 分包）
+从 [GitHub Release](https://github.com/wu138di/wu138di-global-tools/releases/tag/v1.1.0-alpha.2) 或 [阿里云镜像](https://8.134.248.110/global-tools/plugins/standalone/v1.1.0-alpha.2/wu138di-global-tools-v1.1.0-alpha.2-windows.zip) 下载 **v1.1.0-alpha.2 Windows 安装包**，解压后双击 `setup.cmd`。
 
-JS/TXT 二选一，只导入对应机型的界面插件。不要把 F50 包装到 U30；安装不是刷机，不清空订阅。初始口令 **2007**，可在设置更改。透明代理与开机自启需手动开启。
+1. USB 连接设备并开启 USB 调试，或连接设备 Wi-Fi 并使用已开启的无线 ADB。
+2. 安装器自动识别 ADB、单台已授权设备、机型、固件和 Root，部署独立管理端。
+3. 浏览器打开 **https://192.168.0.1:9088/**。初始口令 **2007**，可在设置更改。
 
-源码构建全部变体：`python scripts/build-all.py`。U30 测试：`npm ci && npm test`；F50 测试：在 `variants/f50` 目录执行相同命令。机型专用源码分别为 `src/` 和 `variants/f50/src/`。
+首次访问使用设备自签名证书，需要自行确认。网页只监听设备局域网，不开放蜂窝公网。原有代理和自启状态保留；安装不主动开启代理。
 
+### ADB 与 Root 环境
 
+- 优先复用现有 ADB/Android SDK。缺少 ADB 时，经用户接受 Android SDK 许可后从 Google 下载锁定版本，校验 SHA256；不改系统 PATH、不安装驱动、不替用户确认调试授权。
+- 包内包含 BusyBox、原生 HTTP 工具、离线内核/规则/面板资源，以及官方 **Magisk v30.7 APK**。新环境不借用旧平台的 curl。
+- 已有 Root：保留当前 Magisk/Root 框架，不强制升级；检查并准备受支持的启动脚本目录。
+- 尚无 Root：准备 Magisk 应用和设备报告后停止。**安装 APK 不等于完成 Root**。首次刷写仍需本机当前固件、正确分区与 Bootloader 条件；安装器不执行解锁、刷分区、擦除或重启。遵循 [Magisk 官方安装说明](https://topjohnwu.github.io/Magisk/install.html)，不要使用他人的修补镜像。
 
-面向 **UFI-TOOLS** 的 Mihomo 代理配置插件。支持订阅、节点 YAML、规则查看、连接管理、测速与网络检测哦~₍ᐢ.ˬ.ᐢ₎♡~。
+`check-env.cmd`：检查环境。`prepare-root.cmd`：准备 Root 所需应用与设备报告。报告位于本地 `reports/`，不上传。
 
-<img width="1199" height="676" alt="3-2" src="https://github.com/user-attachments/assets/e110b84a-ffda-458b-94e7-9f922f1860dc" />
+高级用法：
+
+```powershell
+.\bootstrap.ps1 -Action Install -Device 192.168.0.1:5555 -Adb C:\Android\platform-tools\adb.exe
+.\bootstrap.ps1 -Action Check
+.\bootstrap.ps1 -Action PrepareRoot
+```
+
+无线调试只在受信局域网显式开启：`-Action ConnectWifi -Device USB_SERIAL -WifiIp 192.168.0.1 -EnableWirelessAdb`。恢复 USB 模式用 `adb -s DEVICE usb`。
 
 ## 功能
 
-- 概览、节点、订阅、规则、连接、检测、设置。
-- HTTPS 订阅和 YAML 文件/文本导入；YAML 需包含标准 `proxies:` 节点段。
-- 导入只更新节点，不覆盖网关 DNS、端口、规则与运行模式；先校验、再提交，失败恢复原数据。
-- 本地 YAML 模式暂停定时订阅刷新，重新导入链接后恢复订阅模式。
-- 使用节点所属 provider 的健康检查接口；测速和设备命令串行，显示核心返回的测量值。过期历史值不当作当前延迟。
-- 开启前检测节点与本机代理 HTTPS 链路；节点不可用时不接管终端流量。
-- 网络检测区分路由、DNS、国内直连、代理连接；订阅 HTTP 401/403 单独显示。
-- 内置 SVG 国旗与独立选中标记，无外部旗标 CDN。
-- 樱花背景、玻璃卡片、手机底栏、桌面侧栏、系统深浅色跟随和 44px 触控区域。
+订阅/YAML 导入、节点与地区国旗、真实测速、地区分流、规则与连接查看、网络检测、核心启停、代理自启、口令修改。停止核心后仍显示已保存节点，不伪造当前延迟或流量。
 
-安装界面不代表开启代理；使用电源按钮手动开启/停止，开机自启独立控制。关闭网页不等于停止设备代理。
+设备直连订阅失败时，可尝试通过现有可用节点下载，保留 TLS 校验，不自动开启透明代理。全新无节点时可导入 YAML。此回退来源支持“立即更新”，尚未实现独立管理端定时刷新。
 
-## 适用范围
+## 兼容状态
 
-当前 U30 Pro / MU5358 B24 已完成本次实机验证；F50 B08 仍按候选包发布，未完成本次实机验收。安装器依赖 Android ARM64、Root、Magisk BusyBox、系统 curl、`br0`、`sipa_eth0`、`192.168.0.1/24` 及相应透明代理内核能力。
+| 设备 | 状态 |
+|---|---|
+| U30 Pro / MU5358 B24 | 独立端已有实机验证；新安装器与工具验证记录见本版 Release |
+| F50 / MU300 B08 | 独立候选适配，控制端口 19090，保留原厂 9090；尚未完成同等实机验收 |
+| 其他 CPE / 固件 | 不默认通刷，安装前按机型与构建号检查 |
 
-节点测速、订阅可用性与平台播放权限是不同事项；延迟数值随节点和网络变化，不承诺所有节点低于某个固定数值。
+仍需 Android ARM64、Root、内核网络能力及设备局域网条件。节点延迟、服务端可用性与平台地区解锁不同，不保证每个节点低于 500ms。
 
-其余支持UFI-TOOLS的有待测试，欢迎来联系我测试！
+## 启停与回滚
 
-## 源码构建与测试
+管理端自启与代理自启分开。Root 终端：`/system/bin/sh /data/adb/wu-global/manager.sh start|stop|status|boot-on|boot-off`（一次一个动作）。初次安装不创建管理端自启，设备重启后可手动启动。
 
-需要 Python 3.10+、Node.js 20+ 和 npm。
+安装输出设备专属 `rollback.sh` 路径。脚本归档新目录、恢复旧管理端，不删除节点或用户配置。旧运行脚本的工具迁移另有备份与回滚，须关闭透明代理后执行。共享工具保留，以免破坏已安装核心。
 
-```sh
-npm ci
-npm test
-python scripts/build.py
-```
+## 源码
 
-`dist/` 为可直接导入的独立文件；运行时不依赖 npm、Python、外部 JS CDN。测试使用合成数据，不访问用户设备。
-## 声明
+`standalone/`：Go 管理引擎、原生 HTTP 工具、网页与测试。`device/`：独立设备控制与离线安装脚本。`installer/`：ADB/Root 准备器。`vendor/`：第三方工具与许可证。
 
-本仓库不是 UFI-TOOLS、Mihomo 或 Clash 的官方发行版。界面布局参考 Clash Verge，未包含其桌面程序。代码许可不自动涵盖图片素材的第三方权利。
+构建需要 Go 1.26、Python 3、Node.js 20+：`npm ci`，`python standalone/build.py --host`，`npm test`。依赖资源按 SHA256 校验，发布包内已携带设备端所需资源。
 
-## 支持我
-
-制作实属不易，如果你想为爱发电，可以扫下面的码支持我~谢谢啦
-
-<img width="1382" height="1382" alt="mm_reward_qrcode_1792512034770" src="https://github.com/user-attachments/assets/b684be82-806f-4a94-9248-ec0028d21167" />
-
+本仓库不包含个人订阅、节点凭据、API 密钥或设备备份。参见 [组件说明](NOTICE.md)。
 
 **Made by wu138di**

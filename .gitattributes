@@ -1,5 +1,4 @@
 * text=auto eol=lf
-*.png -text
-*.webp -text
-**/busybox-arm64 -text
-dist/** -text
+*.png binary
+*.webp binary
+vendor/busybox/busybox-arm64 binary
